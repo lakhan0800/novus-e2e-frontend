@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
+import { identifyPendoVisitor } from "../analytics/pendo";
 import { api } from "../api/client";
 
 export interface User {
@@ -36,11 +37,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     setUser(session.user);
     setAccount(session.account);
+    identifyPendoVisitor(session.user, session.account);
   };
 
   const logout = () => {
     setUser(null);
     setAccount(null);
+    // Reset Pendo to a fresh anonymous visitor (clearSession is missing if pendo.js was blocked).
+    if (pendo.clearSession) pendo.clearSession();
   };
 
   return (

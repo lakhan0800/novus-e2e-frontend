@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from "react";
+import { identifyPendoVisitor } from "../analytics/pendo";
 import { api } from "../api/client";
-import { useAuth } from "../auth/AuthContext";
+import { useAuth, type Account } from "../auth/AuthContext";
 
 export function SettingsPage() {
-  const { account } = useAuth();
+  const { user, account } = useAuth();
   const [inviteEmail, setInviteEmail] = useState("");
   const [message, setMessage] = useState<string | null>(null);
 
@@ -15,7 +16,9 @@ export function SettingsPage() {
   };
 
   const upgrade = async () => {
-    await api.post("/api/account/upgrade", { plan: "team" });
+    const upgraded = await api.post<Account>("/api/account/upgrade", { plan: "team" });
+    // AuthContext keeps the old plan until the next sign-in, so send Pendo the upgraded account.
+    if (user) identifyPendoVisitor(user, upgraded);
     setMessage("Upgraded to the Team plan");
   };
 
