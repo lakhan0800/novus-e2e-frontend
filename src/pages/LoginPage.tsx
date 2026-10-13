@@ -1,6 +1,17 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { getStatusCode, pendo } from "../analytics/pendo";
 import { useAuth } from "../auth/AuthContext";
+
+/** Why the API rejected a sign-in attempt, based on what backend routes/auth.ts returns. */
+function getLoginFailureReason(statusCode: number | undefined): string {
+  if (statusCode === undefined) return "network_error";
+  // Schema validation failed, which in practice means an empty email or password.
+  if (statusCode === 400) return "validation_failed";
+  // No user has that email: the API does not check passwords yet, so never a wrong password.
+  if (statusCode === 401) return "unknown_email";
+  return statusCode >= 500 ? "server_error" : "unexpected_status";
+}
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -15,7 +26,15 @@ export function LoginPage() {
     try {
       await login(email, password);
       navigate("/");
-    } catch {
+    } catch (err) {
+      const statusCode = getStatusCode(err);
+      // Never send the credentials themselves, only whether each field was filled in.
+      pendo.track("login_failed", {
+        statusCode,
+        failureReason: getLoginFailureReason(statusCode),
+        emailProvided: email.length > 0,
+        passwordProvided: password.length > 0,
+      });
       setError("Invalid email or password");
     }
   };

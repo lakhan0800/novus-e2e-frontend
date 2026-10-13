@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useParams } from "react-router-dom";
+import { pendo } from "../analytics/pendo";
 import { api } from "../api/client";
 
 interface Task {
@@ -13,6 +14,10 @@ interface ProjectDetail {
   name: string;
   tasks: Task[];
 }
+
+// Module level so each completion is reported once per session, even if Complete is clicked
+// again before the list re-renders (the API accepts repeat completions of the same task).
+const reportedCompletedTaskIds = new Set<string>();
 
 export function ProjectDetailPage() {
   const { projectId } = useParams();
@@ -28,6 +33,14 @@ export function ProjectDetailPage() {
     if (!project) return;
     const task = await api.post<Task>(`/api/projects/${project.id}/tasks`, { title });
     setProject({ ...project, tasks: [...project.tasks, task] });
+    // `project.tasks` does not include the new task yet, and new tasks are always created open.
+    pendo.track("task_created", {
+      projectId: project.id,
+      taskId: task.id,
+      taskCount: project.tasks.length + 1,
+      openTaskCount: project.tasks.filter((t) => !t.done).length + 1,
+      isFirstTask: project.tasks.length === 0,
+    });
     setTitle("");
   };
 
@@ -37,6 +50,16 @@ export function ProjectDetailPage() {
     setProject({
       ...project,
       tasks: project.tasks.map((task) => (task.id === taskId ? { ...task, done: true } : task)),
+    });
+    if (reportedCompletedTaskIds.has(taskId)) return;
+    reportedCompletedTaskIds.add(taskId);
+    const remainingOpenTasks = project.tasks.filter((t) => !t.done && t.id !== taskId).length;
+    pendo.track("task_completed", {
+      projectId: project.id,
+      taskId,
+      totalTasks: project.tasks.length,
+      remainingOpenTasks,
+      allTasksCompleted: remainingOpenTasks === 0,
     });
   };
 

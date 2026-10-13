@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { pendo } from "../analytics/pendo";
 import { api } from "../api/client";
 
 interface Project {
@@ -9,6 +10,7 @@ interface Project {
 }
 
 export function ProjectsPage() {
+  const [searchParams] = useSearchParams();
   const [projects, setProjects] = useState<Project[]>([]);
   const [name, setName] = useState("");
 
@@ -20,6 +22,14 @@ export function ProjectsPage() {
     event.preventDefault();
     const project = await api.post<Project>("/api/projects", { name });
     setProjects([project, ...projects]);
+    // `projects` is still the list from before this project was created.
+    pendo.track("project_created", {
+      projectId: project.id,
+      projectCount: projects.length + 1,
+      isFirstProject: projects.length === 0,
+      // The Dashboard's "New project" link (#dashboard-new-project) opens /projects?new=1.
+      entryPoint: searchParams.get("new") === "1" ? "dashboard_cta" : "projects_page",
+    });
     setName("");
   };
 

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
+import { pendo } from "../analytics/pendo";
 import { api } from "../api/client";
 
 export interface User {
@@ -36,6 +37,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     setUser(session.user);
     setAccount(session.account);
+    // Identify first so the event belongs to the signed-in visitor, not an anonymous one.
+    pendo.identify({ visitor: { id: session.user.id }, account: { id: session.account.id } });
+    pendo.track("user_logged_in", {
+      userRole: session.user.role,
+      accountPlan: session.account.plan,
+      accountSeats: session.account.seats,
+      userCreatedAt: session.user.createdAt,
+    });
   };
 
   const logout = () => {

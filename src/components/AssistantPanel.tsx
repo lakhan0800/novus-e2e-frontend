@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { getStatusCode, pendo } from "../analytics/pendo";
 import { api } from "../api/client";
 
 interface AssistantMessage {
@@ -17,12 +18,33 @@ export function AssistantPanel() {
     event.preventDefault();
     if (!input.trim()) return;
     const next = [...messages, { role: "user" as const, content: input }];
+    const promptLength = input.length;
     setMessages(next);
     setInput("");
     setPending(true);
+    const startedAt = performance.now();
     try {
       const reply = await api.post<{ reply: string }>("/api/assistant", { messages: next });
       setMessages([...next, { role: "assistant", content: reply.reply }]);
+      pendo.track("ai_assistant_response_received", {
+        conversationLength: next.length,
+        isNewConversation: messages.length === 0,
+        promptLength,
+        replyLength: reply.reply.length,
+        // The API replies with "" when the completion has no content.
+        emptyReply: reply.reply === "",
+        responseTimeMs: Math.round(performance.now() - startedAt),
+      });
+    } catch (error) {
+      pendo.track("ai_assistant_request_failed", {
+        statusCode: getStatusCode(error),
+        errorMessage: (error instanceof Error ? error.message : String(error)).slice(0, 100),
+        conversationLength: next.length,
+        promptLength,
+        responseTimeMs: Math.round(performance.now() - startedAt),
+      });
+      // This block only adds tracking; re-throw so the failure propagates exactly as before.
+      throw error;
     } finally {
       setPending(false);
     }
