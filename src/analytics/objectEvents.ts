@@ -13,6 +13,7 @@ export interface ProjectObjectMetadata {
   accountId?: string;
   taskId?: string;
   projectStatus?: string;
+  taskCount?: number;
 }
 
 export function trackProjectObjectEvent(

@@ -3,19 +3,32 @@ import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 
 export function SettingsPage() {
-  const { account } = useAuth();
+  const { user, account } = useAuth();
   const [inviteEmail, setInviteEmail] = useState("");
   const [message, setMessage] = useState<string | null>(null);
 
   const invite = async (event: FormEvent) => {
     event.preventDefault();
     await api.post("/api/account/invitations", { email: inviteEmail });
+    // Fires only after the API accepts the invitation. Never send the invitee email (PII).
+    window.pendo?.track("teammate_invited", {
+      accountPlan: account?.plan ?? "unknown",
+      seats: account?.seats ?? 0,
+      inviterRole: user?.role ?? "unknown",
+    });
     setMessage(`Invitation sent to ${inviteEmail}`);
     setInviteEmail("");
   };
 
   const upgrade = async () => {
     await api.post("/api/account/upgrade", { plan: "team" });
+    // Conversion milestone: fires only after the upgrade request succeeds.
+    window.pendo?.track("plan_upgraded", {
+      previousPlan: account?.plan ?? "unknown",
+      newPlan: "team",
+      seats: account?.seats ?? 0,
+      userRole: user?.role ?? "unknown",
+    });
     setMessage("Upgraded to the Team plan");
   };
 

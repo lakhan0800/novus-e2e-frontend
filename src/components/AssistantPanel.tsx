@@ -20,9 +20,27 @@ export function AssistantPanel() {
     setMessages(next);
     setInput("");
     setPending(true);
+    const startedAt = performance.now();
     try {
       const reply = await api.post<{ reply: string }>("/api/assistant", { messages: next });
+      // AI outcome: lengths and latency only — never the message text itself.
+      window.pendo?.track("assistant_response_received", {
+        success: true,
+        conversationLength: next.length,
+        promptLength: input.length,
+        replyLength: reply.reply.length,
+        latencyMs: Math.round(performance.now() - startedAt),
+      });
       setMessages([...next, { role: "assistant", content: reply.reply }]);
+    } catch (requestError) {
+      window.pendo?.track("assistant_response_received", {
+        success: false,
+        conversationLength: next.length,
+        promptLength: input.length,
+        replyLength: 0,
+        latencyMs: Math.round(performance.now() - startedAt),
+      });
+      throw requestError;
     } finally {
       setPending(false);
     }

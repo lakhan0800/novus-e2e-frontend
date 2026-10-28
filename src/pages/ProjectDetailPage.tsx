@@ -30,7 +30,14 @@ export function ProjectDetailPage() {
     event.preventDefault();
     if (!project) return;
     const task = await api.post<Task>(`/api/projects/${project.id}/tasks`, { title });
-    setProject({ ...project, tasks: [...project.tasks, task] });
+    const tasks = [...project.tasks, task];
+    // Fires once the task is persisted; projectId/taskId join with task_completed.
+    trackProjectObjectEvent("task_created", {
+      projectId: project.id,
+      taskId: task.id,
+      taskCount: tasks.length,
+    });
+    setProject({ ...project, tasks });
     setTitle("");
   };
 
