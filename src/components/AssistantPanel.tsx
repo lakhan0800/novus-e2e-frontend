@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { api } from "../api/client";
 
+const AGENT_ID = "dxicLXeU1eFro3X_zZe88V-gl3c";
+
 interface AssistantMessage {
   role: "user" | "assistant";
   content: string;
@@ -12,10 +14,20 @@ export function AssistantPanel() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [pending, setPending] = useState(false);
+  const [conversationId] = useState(() => crypto.randomUUID());
 
   const send = async (event: FormEvent) => {
     event.preventDefault();
     if (!input.trim()) return;
+
+    const promptMessageId = crypto.randomUUID();
+    window.pendo?.trackAgent("prompt", {
+      agentId: AGENT_ID,
+      conversationId,
+      messageId: promptMessageId,
+      content: input,
+    });
+
     const next = [...messages, { role: "user" as const, content: input }];
     setMessages(next);
     setInput("");
@@ -23,6 +35,13 @@ export function AssistantPanel() {
     try {
       const reply = await api.post<{ reply: string }>("/api/assistant", { messages: next });
       setMessages([...next, { role: "assistant", content: reply.reply }]);
+
+      window.pendo?.trackAgent("agent_response", {
+        agentId: AGENT_ID,
+        conversationId,
+        messageId: crypto.randomUUID(),
+        content: reply.reply,
+      });
     } finally {
       setPending(false);
     }
