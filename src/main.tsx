@@ -5,6 +5,12 @@ import { App } from "./App";
 import { AuthProvider } from "./auth/AuthContext";
 import "./styles.css";
 
+pendo.initialize({
+  visitor: {
+    id: "",
+  },
+});
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
