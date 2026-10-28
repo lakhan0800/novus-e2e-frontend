@@ -23,6 +23,10 @@ export function AssistantPanel() {
     try {
       const reply = await api.post<{ reply: string }>("/api/assistant", { messages: next });
       setMessages([...next, { role: "assistant", content: reply.reply }]);
+      window.pendo?.track("assistant_query_completed", {
+        messageCount: next.length + 1,
+        success: true,
+      });
     } finally {
       setPending(false);
     }
