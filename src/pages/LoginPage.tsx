@@ -13,7 +13,11 @@ export function LoginPage() {
     event.preventDefault();
     setError(null);
     try {
-      await login(email, password);
+      const session = await login(email, password);
+      window.pendo?.track("login_succeeded", {
+        userRole: session.user.role,
+        accountPlan: session.account.plan,
+      });
       navigate("/");
     } catch {
       setError("Invalid email or password");

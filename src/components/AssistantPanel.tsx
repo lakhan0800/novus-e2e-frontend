@@ -22,7 +22,12 @@ export function AssistantPanel() {
     setPending(true);
     try {
       const reply = await api.post<{ reply: string }>("/api/assistant", { messages: next });
-      setMessages([...next, { role: "assistant", content: reply.reply }]);
+      const updatedMessages = [...next, { role: "assistant" as const, content: reply.reply }];
+      window.pendo?.track("assistant_reply_received", {
+        messageCount: updatedMessages.length,
+        conversationTurnCount: next.filter((m) => m.role === "user").length,
+      });
+      setMessages(updatedMessages);
     } finally {
       setPending(false);
     }

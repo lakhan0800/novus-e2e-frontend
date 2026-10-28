@@ -30,6 +30,11 @@ export function ProjectDetailPage() {
     event.preventDefault();
     if (!project) return;
     const task = await api.post<Task>(`/api/projects/${project.id}/tasks`, { title });
+    trackProjectObjectEvent("task_created", {
+      projectId: project.id,
+      accountId: account?.id,
+      taskId: task.id,
+    });
     setProject({ ...project, tasks: [...project.tasks, task] });
     setTitle("");
   };

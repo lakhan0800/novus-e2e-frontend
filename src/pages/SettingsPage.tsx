@@ -10,12 +10,21 @@ export function SettingsPage() {
   const invite = async (event: FormEvent) => {
     event.preventDefault();
     await api.post("/api/account/invitations", { email: inviteEmail });
+    window.pendo?.track("invitation_sent", {
+      accountPlan: account?.plan ?? "unknown",
+      accountSeats: account?.seats ?? 0,
+    });
     setMessage(`Invitation sent to ${inviteEmail}`);
     setInviteEmail("");
   };
 
   const upgrade = async () => {
+    const previousPlan = account?.plan ?? "unknown";
     await api.post("/api/account/upgrade", { plan: "team" });
+    window.pendo?.track("plan_upgraded", {
+      previousPlan,
+      newPlan: "team",
+    });
     setMessage("Upgraded to the Team plan");
   };
 

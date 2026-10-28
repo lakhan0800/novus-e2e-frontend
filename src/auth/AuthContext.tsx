@@ -19,7 +19,7 @@ export interface Account {
 interface AuthState {
   user: User | null;
   account: Account | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<{ user: User; account: Account }>;
   logout: () => void;
 }
 
@@ -36,6 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     setUser(session.user);
     setAccount(session.account);
+    return session;
   };
 
   const logout = () => {
