@@ -15,7 +15,13 @@ export function LoginPage() {
     try {
       await login(email, password);
       navigate("/");
-    } catch {
+    } catch (err) {
+      const status = err instanceof Error ? /failed with (\d+)/.exec(err.message)?.[1] : undefined;
+      // Login rejected: the "Invalid email or password" error is shown.
+      window.pendo?.track("Sign in failed", {
+        http_status: status ? Number(status) : 0,
+        invalid_credentials: status === "401",
+      });
       setError("Invalid email or password");
     }
   };
