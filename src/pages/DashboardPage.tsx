@@ -20,6 +20,8 @@ export function DashboardPage() {
   return (
     <section>
       <h1>Welcome back, {user?.fullName}</h1>
+      <button type="button" data-testid="px274-prod-e2e-probe">PX-274 E2E probe</button>
+
       <div className="stats">
         <div className="stat-card">
           <span className="stat-value">{summary?.openTasks ?? "-"}</span>
