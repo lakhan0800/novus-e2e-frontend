@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
+import { TASKLY_AI_AGENT_ID, trackAgentEvent } from "../analytics/agentEvents";
 import { api } from "../api/client";
 
 interface AssistantMessage {
@@ -12,6 +13,7 @@ export function AssistantPanel() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [pending, setPending] = useState(false);
+  const conversationId = useRef(crypto.randomUUID()).current;
 
   const send = async (event: FormEvent) => {
     event.preventDefault();
@@ -20,9 +22,23 @@ export function AssistantPanel() {
     setMessages(next);
     setInput("");
     setPending(true);
+    trackAgentEvent("prompt", {
+      agentId: TASKLY_AI_AGENT_ID,
+      conversationId,
+      messageId: crypto.randomUUID(),
+      content: input,
+      suggestedPrompt: false,
+      fileUploaded: false,
+    });
     try {
       const reply = await api.post<{ reply: string }>("/api/assistant", { messages: next });
       setMessages([...next, { role: "assistant", content: reply.reply }]);
+      trackAgentEvent("agent_response", {
+        agentId: TASKLY_AI_AGENT_ID,
+        conversationId,
+        messageId: crypto.randomUUID(),
+        content: reply.reply,
+      });
     } finally {
       setPending(false);
     }
