@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useParams } from "react-router-dom";
 import { trackProjectObjectEvent } from "../analytics/objectEvents";
+import { trackEvent } from "../analytics/trackEvent";
 import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 
@@ -32,6 +33,13 @@ export function ProjectDetailPage() {
     const task = await api.post<Task>(`/api/projects/${project.id}/tasks`, { title });
     setProject({ ...project, tasks: [...project.tasks, task] });
     setTitle("");
+    // The API created the task and it now appears in the project's task list.
+    trackEvent("Task added", {
+      project_id: project.id,
+      task_id: task.id,
+      task_count: project.tasks.length + 1,
+      account_plan: account?.plan ?? "unknown",
+    });
   };
 
   const completeTask = async (taskId: string) => {
