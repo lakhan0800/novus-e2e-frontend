@@ -20,9 +20,25 @@ export function AssistantPanel() {
     setMessages(next);
     setInput("");
     setPending(true);
+    const startedAt = performance.now();
     try {
       const reply = await api.post<{ reply: string }>("/api/assistant", { messages: next });
+      // AI outcome: the LLM answered. Prompt and reply text are not sent (may contain PII).
+      window.pendo?.track("assistant_reply_received", {
+        conversationLength: next.length + 1,
+        replyLength: reply.reply.length,
+        responseTimeMs: Math.round(performance.now() - startedAt),
+        success: true,
+      });
       setMessages([...next, { role: "assistant", content: reply.reply }]);
+    } catch (requestError) {
+      // Failure variant: the assistant request did not return a reply.
+      window.pendo?.track("assistant_reply_received", {
+        conversationLength: next.length,
+        responseTimeMs: Math.round(performance.now() - startedAt),
+        success: false,
+      });
+      throw requestError;
     } finally {
       setPending(false);
     }

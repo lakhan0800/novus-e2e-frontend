@@ -30,6 +30,12 @@ export function ProjectDetailPage() {
     event.preventDefault();
     if (!project) return;
     const task = await api.post<Task>(`/api/projects/${project.id}/tasks`, { title });
+    // Fires once the API confirms the task was created (the button click only records the attempt).
+    trackProjectObjectEvent("task_created", {
+      projectId: project.id,
+      taskId: task.id,
+      taskCount: project.tasks.length + 1,
+    });
     setProject({ ...project, tasks: [...project.tasks, task] });
     setTitle("");
   };
