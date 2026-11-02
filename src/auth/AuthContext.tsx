@@ -40,15 +40,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     pendo.identify({
       visitor: {
         id: session.user.id,
-        email: session.user.email,
-        full_name: session.user.fullName,
         role: session.user.role,
         accountId: session.user.accountId,
         createdAt: session.user.createdAt,
       },
       account: {
         id: session.account.id,
-        name: session.account.name,
         plan: session.account.plan,
         seats: session.account.seats,
       },
