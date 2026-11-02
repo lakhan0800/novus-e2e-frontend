@@ -5,6 +5,14 @@ import { App } from "./App";
 import { AuthProvider } from "./auth/AuthContext";
 import "./styles.css";
 
+// Boot Pendo once with an anonymous visitor; the signed-in user is registered via
+// pendo.identify in AuthContext after login.
+pendo.initialize({
+  visitor: {
+    id: "",
+  },
+});
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
