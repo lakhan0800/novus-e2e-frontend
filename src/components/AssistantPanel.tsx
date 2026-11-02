@@ -6,23 +6,56 @@ interface AssistantMessage {
   content: string;
 }
 
+const TASKLY_AGENT_ID = "0jZ8d4CSK_nwuO4Laiw5JmRXgqg";
+
+type AgentEventType = "prompt" | "agent_response" | "user_reaction";
+
+interface AgentEventMetadata {
+  agentId: string;
+  conversationId: string;
+  messageId: string;
+  content: string;
+  suggestedPrompt?: boolean;
+  fileUploaded?: boolean;
+}
+
+function trackAgentEvent(eventType: AgentEventType, metadata: AgentEventMetadata): void {
+  if (typeof pendo === "undefined" || typeof pendo.trackAgent !== "function") return;
+  pendo.trackAgent(eventType, metadata);
+}
+
 /** Chat panel backed by the API's /api/assistant route, which calls an LLM. */
 export function AssistantPanel() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [pending, setPending] = useState(false);
+  const [conversationId] = useState(() => crypto.randomUUID());
 
   const send = async (event: FormEvent) => {
     event.preventDefault();
     if (!input.trim()) return;
     const next = [...messages, { role: "user" as const, content: input }];
     setMessages(next);
+    trackAgentEvent("prompt", {
+      agentId: TASKLY_AGENT_ID,
+      conversationId,
+      messageId: crypto.randomUUID(),
+      content: input,
+      suggestedPrompt: false,
+      fileUploaded: false,
+    });
     setInput("");
     setPending(true);
     try {
       const reply = await api.post<{ reply: string }>("/api/assistant", { messages: next });
       setMessages([...next, { role: "assistant", content: reply.reply }]);
+      trackAgentEvent("agent_response", {
+        agentId: TASKLY_AGENT_ID,
+        conversationId,
+        messageId: crypto.randomUUID(),
+        content: reply.reply,
+      });
     } finally {
       setPending(false);
     }
