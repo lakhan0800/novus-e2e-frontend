@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from "react";
+import { TrackEventName, trackEvent } from "../analytics/trackEvents";
 import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 
 export function SettingsPage() {
-  const { account } = useAuth();
+  const { user, account } = useAuth();
   const [inviteEmail, setInviteEmail] = useState("");
   const [message, setMessage] = useState<string | null>(null);
 
@@ -12,11 +13,24 @@ export function SettingsPage() {
     await api.post("/api/account/invitations", { email: inviteEmail });
     setMessage(`Invitation sent to ${inviteEmail}`);
     setInviteEmail("");
+    // API created the invitation and the user sees the confirmation.
+    trackEvent(TrackEventName.InvitationSent, {
+      account_plan: account?.plan ?? "unknown",
+      account_seats: account?.seats ?? 0,
+      inviter_role: user?.role ?? "unknown",
+    });
   };
 
   const upgrade = async () => {
     await api.post("/api/account/upgrade", { plan: "team" });
     setMessage("Upgraded to the Team plan");
+    // API upgraded the account to the Team plan (revenue conversion).
+    trackEvent(TrackEventName.PlanUpgraded, {
+      previous_plan: account?.plan ?? "unknown",
+      new_plan: "team",
+      account_seats: account?.seats ?? 0,
+      upgrader_role: user?.role ?? "unknown",
+    });
   };
 
   return (

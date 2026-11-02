@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
+import { TrackEventName, trackEvent } from "../analytics/trackEvents";
 import { api } from "../api/client";
 
 export interface User {
@@ -36,6 +37,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     setUser(session.user);
     setAccount(session.account);
+    // Login API accepted the credentials and the user/account session is set.
+    trackEvent(TrackEventName.SignedInSuccessfully, {
+      user_role: session.user.role,
+      account_plan: session.account.plan,
+      account_seats: session.account.seats,
+    });
   };
 
   const logout = () => {
