@@ -15,7 +15,12 @@ export function LoginPage() {
     try {
       await login(email, password);
       navigate("/");
-    } catch {
+    } catch (err) {
+      // Login friction: the sign-in was rejected and the user sees an error message.
+      window.pendo?.track("Sign-in failed", {
+        failure_reason: err instanceof Error ? err.message.slice(0, 100) : "unknown",
+        login_method: "password",
+      });
       setError("Invalid email or password");
     }
   };
