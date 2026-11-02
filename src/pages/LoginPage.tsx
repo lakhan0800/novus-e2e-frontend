@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { trackEvent } from "../analytics/trackEvent";
 import { useAuth } from "../auth/AuthContext";
 
 export function LoginPage() {
@@ -14,10 +15,15 @@ export function LoginPage() {
     setError(null);
     try {
       await login(email, password);
-      navigate("/");
     } catch {
+      // Credentials were rejected; the "Invalid email or password" error is shown.
+      trackEvent("Sign-in failed", { login_method: "password" });
       setError("Invalid email or password");
+      return;
     }
+    // The API returned a user and account session; send the user to the Dashboard.
+    trackEvent("Signed in", { login_method: "password" });
+    navigate("/");
   };
 
   return (

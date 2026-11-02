@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { trackEvent } from "../analytics/trackEvent";
 import { api } from "../api/client";
 
 interface AssistantMessage {
@@ -23,6 +24,11 @@ export function AssistantPanel() {
     try {
       const reply = await api.post<{ reply: string }>("/api/assistant", { messages: next });
       setMessages([...next, { role: "assistant", content: reply.reply }]);
+      // /api/assistant returned an LLM reply and it is shown in the conversation.
+      trackEvent("Assistant reply received", {
+        conversation_length: next.length + 1,
+        reply_length: reply.reply.length,
+      });
     } finally {
       setPending(false);
     }
